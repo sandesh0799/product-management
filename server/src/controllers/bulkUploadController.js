@@ -19,69 +19,117 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage }).single('file');
 
+// Helper function to map input fields to model fields
+function mapRowToProduct(row, category) {
+    return {
+        name: row.Product || row.name,
+        price: parseFloat(row.Price || row.price),
+        image: row.Image || row.image,
+        category: category._id
+    };
+}
+
 // Bulk upload handler (CSV/XLSX)
 exports.bulkUpload = async (req, res) => {
     try {
-        upload(req, res, async (err) => {
-            if (err) {
-                return res.status(500).send('File upload error: ' + err.message);
-            }
+        // Wrap the upload function in a promise to ensure proper async handling
+        await new Promise((resolve, reject) => {
+            upload(req, res, (err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
+        });
 
-            const filePath = req.file.path;
-            const ext = path.extname(req.file.originalname);
+        if (!req.file) {
+            return res.status(400).send('No file uploaded');
+        }
 
-            let products = [];
+        const filePath = req.file.path;
+        const ext = path.extname(req.file.originalname);
 
-            if (ext === '.csv') {
-                // Read and process CSV file
+        let products = [];
+
+        if (ext === '.csv') {
+            // For CSV files, use a promise-based approach to collect all rows first
+            const csvRows = await new Promise((resolve, reject) => {
+                const rows = [];
+
                 fs.createReadStream(filePath)
                     .pipe(csvParser())
-                    .on('data', async (row) => {
-                        // Process each row and prepare product data
-                        const category = await Category.findOne({ name: row.category });
-                        if (category) {
-                            products.push({
-                                name: row.name,
-                                price: parseFloat(row.price),
-                                image: row.image,
-                                category: category._id,
-                            });
-                        }
+                    .on('data', (row) => {
+                        rows.push(row);
                     })
-                    .on('end', async () => {
-                        // Bulk insert products after processing all rows
-                        await Product.insertMany(products);
-                        res.status(200).send('Bulk upload completed successfully');
-                        fs.unlinkSync(filePath); // Delete the uploaded file after processing
+                    .on('end', () => {
+                        resolve(rows);
+                    })
+                    .on('error', (error) => {
+                        reject(error);
                     });
-            } else if (ext === '.xlsx') {
-                // Read and process XLSX file
-                const workbook = xlsx.readFile(filePath);
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const data = xlsx.utils.sheet_to_json(sheet);
+            });
 
-                for (const row of data) {
-                    const category = await Category.findOne({ name: row.category });
-                    if (category) {
-                        products.push({
-                            name: row.name,
-                            price: parseFloat(row.price),
-                            image: row.image,
-                            category: category._id,
-                        });
-                    }
+            // Now process all rows sequentially
+            for (const row of csvRows) {
+                // Look for category by name (both field formats)
+                const categoryName = row.Category || row.category;
+                if (!categoryName) continue;
+
+                const category = await Category.findOne({ name: categoryName });
+                if (category) {
+                    products.push(mapRowToProduct(row, category));
                 }
-
-                // Bulk insert products
-                await Product.insertMany(products);
-                res.status(200).send('Bulk upload completed successfully');
-                fs.unlinkSync(filePath); // Delete the uploaded file after processing
-            } else {
-                res.status(400).send('Invalid file type. Only CSV and XLSX files are allowed.');
             }
-        });
+
+        } else if (ext === '.xlsx') {
+            // XLSX file processing
+            const workbook = xlsx.readFile(filePath);
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const data = xlsx.utils.sheet_to_json(sheet);
+
+            for (const row of data) {
+                // Look for category by name (both field formats)
+                const categoryName = row.Category || row.category;
+                if (!categoryName) continue;
+
+                const category = await Category.findOne({ name: categoryName });
+                if (category) {
+                    products.push(mapRowToProduct(row, category));
+                }
+            }
+        } else {
+            // Clean up file if invalid type
+            fs.unlinkSync(filePath);
+            return res.status(400).send('Invalid file type. Only CSV and XLSX files are allowed.');
+        }
+
+        // Check if we have products to insert
+        if (products.length === 0) {
+            fs.unlinkSync(filePath);
+            return res.status(400).send('No valid products found for import. Please check your category names match existing categories.');
+        }
+
+        // Bulk insert products
+        await Product.insertMany(products);
+
+        // Clean up file after successful processing
+        fs.unlinkSync(filePath);
+
+        return res.status(200).send(`Bulk upload completed successfully. ${products.length} products imported.`);
+
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error during bulk upload');
+        console.error('Bulk upload error:', error);
+
+        // Clean up file if it exists
+        if (req.file && req.file.path) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (unlinkError) {
+                console.error('Error deleting file:', unlinkError);
+            }
+        }
+
+        return res.status(500).send('Server error during bulk upload: ' + error.message);
     }
 };

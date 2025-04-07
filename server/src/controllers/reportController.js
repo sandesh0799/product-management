@@ -1,9 +1,6 @@
 // backend/controllers/reportController.js
 const Product = require('../models/Product');
 const xlsx = require('xlsx');
-const fs = require('fs');
-const path = require('path');
-
 // Generate CSV Report
 exports.generateCSV = async (req, res) => {
     try {
@@ -11,35 +8,25 @@ exports.generateCSV = async (req, res) => {
 
         // Convert products to CSV format
         const csvData = [
-            ['Product Name', 'Price', 'Category', 'Image']
+            ['Product', 'Price', 'Category', 'Image']
         ];
 
         products.forEach(product => {
             csvData.push([product.name, product.price, product.category.name, product.image]);
         });
 
-        const csvFilePath = path.join(__dirname, '../../reports/products_report.csv');
         const csvString = csvData.map(row => row.join(',')).join('\n');
 
-        // Write CSV to file
-        fs.writeFileSync(csvFilePath, csvString);
+        // Set headers for file download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=products_report.csv');
+        res.status(200).send(csvString);
 
-        // Send CSV file as response
-        res.download(csvFilePath, 'products_report.csv', (err) => {
-            if (err) {
-                console.error('Error downloading file:', err);
-                res.status(500).send('Error downloading the file');
-            }
-
-            // Clean up the file after download
-            fs.unlinkSync(csvFilePath);
-        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error generating CSV report');
     }
 };
-
 // Generate XLSX Report
 exports.generateXLSX = async (req, res) => {
     try {
@@ -47,29 +34,24 @@ exports.generateXLSX = async (req, res) => {
 
         // Convert products to JSON format for XLSX
         const xlsxData = products.map(product => ({
-            'Product Name': product.name,
+            'Product': product.name,
             'Price': product.price,
             'Category': product.category.name,
             'Image': product.image
         }));
 
+        // Create workbook and worksheet
         const ws = xlsx.utils.json_to_sheet(xlsxData);
         const wb = xlsx.utils.book_new();
         xlsx.utils.book_append_sheet(wb, ws, 'Products');
 
-        const xlsxFilePath = path.join(__dirname, '../../reports/products_report.xlsx');
-        xlsx.writeFile(wb, xlsxFilePath);
+        // Write to buffer instead of file
+        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-        // Send XLSX file as response
-        res.download(xlsxFilePath, 'products_report.xlsx', (err) => {
-            if (err) {
-                console.error('Error downloading file:', err);
-                res.status(500).send('Error downloading the file');
-            }
+        // Set headers and send buffer directly
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.status(200).send(buffer);
 
-            // Clean up the file after download
-            fs.unlinkSync(xlsxFilePath);
-        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error generating XLSX report');
