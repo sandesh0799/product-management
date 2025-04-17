@@ -23,7 +23,7 @@ interface DashboardSummary {
       <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
 
       <ng-container *ngIf="dashboardData$ | async as data">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <!-- Stats Card -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold text-gray-700">Products</h2>
@@ -37,16 +37,6 @@ interface DashboardSummary {
             <a routerLink="/categories" class="text-sm text-indigo-500 mt-4 inline-block">View all categories →</a>
           </div>
 
-          <ng-container *ngIf="data.userRole === 'admin'">
-            <div class="bg-white rounded-lg shadow p-6">
-              <h2 class="text-lg font-semibold text-gray-700">Admin Functions</h2>
-              <div class="mt-4 space-y-2">
-                <a routerLink="/users" class="block text-indigo-500">Manage Users →</a>
-                <a routerLink="/bulk-upload" class="block text-indigo-500">Bulk Upload →</a>
-                <a routerLink="/reports" class="block text-indigo-500">View Reports →</a>
-              </div>
-            </div>
-          </ng-container>
         </div>
 
         <!-- Recent Products -->

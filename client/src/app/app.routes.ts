@@ -27,17 +27,5 @@ export const routes: Routes = [
         loadChildren: () => import('./features/categories/categories.routes').then(r => r.CATEGORIES_ROUTES),
         canActivate: [authGuard]
     },
-    // {
-    //     path: 'bulk-upload',
-    //     loadChildren: () => import('./features/bulk-upload/bulk-upload.routes').then(r => r.BULK_UPLOAD_ROUTES),
-    //     canActivate: [authGuard],
-    //     canMatch: [adminGuard]
-    // },
-    // {
-    //     path: 'reports',
-    //     loadChildren: () => import('./features/reports/reports.routes').then(r => r.REPORTS_ROUTES),
-    //     canActivate: [authGuard],
-    //     canMatch: [adminGuard]
-    // },
     { path: '**', redirectTo: '/dashboard' }
 ];

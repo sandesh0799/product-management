@@ -27,40 +27,32 @@ exports.getProducts = async (req, res) => {
     const { page = 1, limit = 10, sortBy = 'name:asc', search = '', categoryId = '' } = req.query;
     const skip = (page - 1) * limit;
 
-    let sortField = 'name';
-    let sortOrder = 'asc';
-
-    if (sortBy.includes(':')) {
-        [sortField, sortOrder] = sortBy.split(':');
-    }
-
+    let [sortField = 'name', sortOrder = 'asc'] = sortBy.split(':');
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
-    // Prepare the sort options object
     const sortOptions = {};
-    if (sortField === 'name') {
-        sortOptions.name = sortDirection;
-    } else if (sortField === 'price') {
-        sortOptions.price = sortDirection;
+    if (['name', 'price'].includes(sortField)) {
+        sortOptions[sortField] = sortDirection;
     }
 
     try {
-        let filterConditions = { name: new RegExp(search, 'i') };
+        const filterConditions = {
+            name: { $regex: search, $options: 'i' }
+        };
 
         if (categoryId) {
-            filterConditions.category = categoryId;
+            filterConditions.category = mongoose.Types.ObjectId(categoryId);
         }
 
-        const products = await Product.find(filterConditions)
-            .populate('category', 'name')
-            .skip(skip)
-            .limit(Number(limit))
-            .sort(sortOptions);
+        const [products, totalProducts] = await Promise.all([
+            Product.find(filterConditions)
+                .populate('category', 'name')
+                .skip(skip)
+                .limit(Number(limit))
+                .sort(sortOptions),
+            Product.countDocuments(filterConditions)
+        ]);
 
-        // Get the total count of products matching the search term
-        const totalProducts = await Product.countDocuments(filterConditions);
-
-        // Return the response
         res.status(200).json({ products, total: totalProducts });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
