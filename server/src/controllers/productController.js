@@ -1,6 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
-
+const mongoose = require("mongoose")
 exports.createProduct = async (req, res) => {
     const { name, image, price, categoryId } = req.body;
     const category = await Category.findById(categoryId);
@@ -41,7 +41,7 @@ exports.getProducts = async (req, res) => {
         };
 
         if (categoryId) {
-            filterConditions.category = mongoose.Types.ObjectId(categoryId);
+            filterConditions.category = new mongoose.Types.ObjectId(categoryId);
         }
 
         const [products, totalProducts] = await Promise.all([

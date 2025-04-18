@@ -30,7 +30,6 @@ export class CategoryListComponent implements OnInit {
     
     this.categoryService.getCategories().subscribe({
       next: (categories) => {
-        console.log(this.categories)
         this.categories = categories;
         this.isLoading = false;
       },

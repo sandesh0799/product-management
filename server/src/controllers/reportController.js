@@ -10,7 +10,7 @@ exports.generateXLSX = async (req, res) => {
         const xlsxData = products.map(product => ({
             'Product': product.name,
             'Price': product.price,
-            'Category': product.category.name,
+            'Category': product?.category?.name,
             'Image': product.image
         }));
 

@@ -68,7 +68,6 @@ export class ProductListComponent implements OnInit {
     loadCategories(): void {
         this.categoryService.getCategories().subscribe({
             next: (categories) => {
-                console.log(categories)
                 this.categories = categories
             },
             error: (err) => this.toastService.showError('Failed to load categories')

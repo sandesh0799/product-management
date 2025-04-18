@@ -52,9 +52,6 @@ interface DashboardSummary {
                   <h3 class="font-medium">{{ product.name }}</h3>
                   <p class="text-sm text-gray-500">{{ product.category?.name || 'No Category' }}</p>
                 </div>
-                <a [routerLink]="['/products', product.id]" class="text-indigo-500 hover:text-indigo-700">
-                  View Details
-                </a>
               </div>
             </div>
           </ng-container>
