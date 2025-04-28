@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'hhttp://localhost:3000' // Change this to your actual production API URL
+    apiUrl: 'https://product-management-vercel.vercel.app/' // Change this to your actual production API URL
 };
