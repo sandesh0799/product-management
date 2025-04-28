@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
+import { Router } from '@angular/router';
 
 @Injectable({
     providedIn: 'root'
@@ -15,7 +16,7 @@ export class AuthService {
     isAuthenticated$ = this.currentUser$.pipe(map(user => !!user));
     redirectUrl: string | null = null;
 
-    constructor(private http: HttpClient) {
+    constructor(private http: HttpClient,private router: Router) {
         this.loadUserFromStorage();
     }
 
@@ -54,6 +55,7 @@ export class AuthService {
         localStorage.removeItem('token');
         localStorage.removeItem('expiresAt');
         this.currentUserSubject.next(null);
+        this.router.navigate(['/login'])
     }
 
     refreshToken(): Observable<string> {

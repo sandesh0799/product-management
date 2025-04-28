@@ -14,7 +14,7 @@ import { Observable } from 'rxjs';
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <!-- Logo -->
-          <a routerLink="/" class="text-xl font-bold">Admin Portal</a>
+          <a routerLink="/" class="text-xl font-bold">Product Management</a>
           
           <!-- Navigation Links -->
           @if (isLoggedIn$ | async) {
