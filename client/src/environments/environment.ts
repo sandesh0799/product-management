@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiUrl: 'https://product-management-vercel.vercel.app/' // Change this to your actual API URL
+    apiUrl: 'https://productmanagementbackend.vercel.app/' // Change this to your actual API URL
 };
